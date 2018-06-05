@@ -2,15 +2,17 @@ package org.http4s
 package servlet
 
 import cats.data.OptionT
-import cats.effect._
+import cats.effect.{Effect, _}
 import cats.implicits.{catsSyntaxEither => _, _}
-import fs2.async
 import java.net.InetSocketAddress
+
 import javax.servlet._
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse, HttpSession}
 import org.http4s.headers.`Transfer-Encoding`
+import org.http4s.internal.unsafeRunAsync
 import org.http4s.server._
 import org.log4s.getLogger
+
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
@@ -18,10 +20,9 @@ import scala.concurrent.duration.Duration
 class Http4sServlet[F[_]](
     service: HttpService[F],
     asyncTimeout: Duration = Duration.Inf,
-    implicit private[this] val executionContext: ExecutionContext = ExecutionContext.global,
     private[this] var servletIo: ServletIo[F],
-    serviceErrorHandler: ServiceErrorHandler[F])(implicit F: Effect[F])
-    extends HttpServlet {
+    implicit private[this] var ec: ExecutionContext,
+    serviceErrorHandler: ServiceErrorHandler[F])(implicit F: Effect[F]) extends HttpServlet {
   private[this] val logger = getLogger
 
   private val asyncTimeoutMillis = if (asyncTimeout.isFinite()) asyncTimeout.toMillis else -1 // -1 == Inf
@@ -71,7 +72,7 @@ class Http4sServlet[F[_]](
       ctx.setTimeout(asyncTimeoutMillis)
       // Must be done on the container thread for Tomcat's sake when using async I/O.
       val bodyWriter = servletIo.initWriter(servletResponse)
-      async.unsafeRunAsync(
+      unsafeRunAsync(
         toRequest(servletRequest).fold(
           onParseFailure(_, servletResponse, bodyWriter),
           handleRequest(ctx, _, bodyWriter)
@@ -99,7 +100,7 @@ class Http4sServlet[F[_]](
       bodyWriter: BodyWriter[F]): F[Unit] = {
     ctx.addListener(new AsyncTimeoutHandler(request, bodyWriter))
     // Note: We're catching silly user errors in the lift => flatten.
-    val response = Async.shift(executionContext) *>
+    val response = Async.shift(ec) *>
       optionTSync
         .suspend(serviceFn(request))
         .getOrElse(Response.notFound)
@@ -114,7 +115,7 @@ class Http4sServlet[F[_]](
     override def onTimeout(event: AsyncEvent): Unit = {
       val ctx = event.getAsyncContext
       val servletResponse = ctx.getResponse.asInstanceOf[HttpServletResponse]
-      async.unsafeRunAsync {
+      unsafeRunAsync {
         if (!servletResponse.isCommitted) {
           val response =
             Response[F](Status.InternalServerError)
@@ -165,13 +166,12 @@ class Http4sServlet[F[_]](
       val response = F.pure(Response[F](Status.InternalServerError))
       // We don't know what I/O mode we're in here, and we're not rendering a body
       // anyway, so we use a NullBodyWriter.
-      async
-        .unsafeRunAsync(renderResponse(response, servletResponse, NullBodyWriter)) { _ =>
-          IO {
-            if (servletRequest.isAsyncStarted)
-              servletRequest.getAsyncContext.complete()
-          }
+      unsafeRunAsync(renderResponse(response, servletResponse, NullBodyWriter)) { _ =>
+        IO {
+          if (servletRequest.isAsyncStarted)
+            servletRequest.getAsyncContext.complete()
         }
+      }
   }
 
   private def toRequest(req: HttpServletRequest): ParseResult[Request[F]] =
@@ -221,8 +221,8 @@ object Http4sServlet {
     new Http4sServlet[F](
       service,
       asyncTimeout,
-      executionContext,
       BlockingServletIo[F](DefaultChunkSize),
+      executionContext,
       DefaultServiceErrorHandler
     )
 }

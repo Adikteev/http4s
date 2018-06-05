@@ -8,6 +8,13 @@ Maintenance branches are merged before each new release. This change log is
 ordered chronologically, so each release contains all changes described below
 it.
 
+# v0.18.16
+* Dependency upgrades:
+  * fs2-1.0.0-M1
+  * fs2-reactive-streams-0.6.0
+  * jawn-0.12.1
+  * jawn-fs2-0.13.0-M1
+
 # v0.18.15 (2018-07-05)
 * Bugfix for `AutoSlash` Middleware in Router [#1937](https://github.com/http4s/http4s/pull/1937)
 * Add `StaticHeaders` middleware that appends static headers to a service [#1939](https://github.com/http4s/http4s/pull/1939)

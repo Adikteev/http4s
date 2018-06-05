@@ -15,13 +15,13 @@ trait ServletContextSyntax {
 final class ServletContextOps private[syntax] (val self: ServletContext) extends AnyVal {
 
   /** Wraps an HttpService and mounts it as a servlet */
-  def mountService[F[_]: Effect](name: String, service: HttpService[F], mapping: String = "/*")(
+  def mountService[F[_]: ConcurrentEffect](name: String, service: HttpService[F], mapping: String = "/*")(
       implicit ec: ExecutionContext = ExecutionContext.global): ServletRegistration.Dynamic = {
     val servlet = new Http4sServlet(
       service = service,
       asyncTimeout = AsyncTimeoutSupport.DefaultAsyncTimeout,
-      executionContext = ec,
       servletIo = servletIo,
+      ec = ec,
       serviceErrorHandler = DefaultServiceErrorHandler[F]
     )
     val reg = self.addServlet(name, servlet)

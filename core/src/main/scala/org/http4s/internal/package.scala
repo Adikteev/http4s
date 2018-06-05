@@ -4,7 +4,7 @@
  */
 package org.http4s
 
-import cats.effect.{Async, Effect, Sync}
+import cats.effect.{Async, Effect, Sync, IO}
 import cats.implicits._
 import fs2.{Chunk, Sink, Stream}
 import java.io.{InputStream, OutputStream}
@@ -68,7 +68,7 @@ package object internal {
         .flatMap(c => Stream.chunk(c))
 
     if (closeAfterUse)
-      Stream.bracket(fis)(useIs, is => F.delay(is.close()))
+      Stream.bracket(fis)(is => F.delay(is.close())).flatMap(useIs)
     else
       Stream.eval(fis).flatMap(useIs)
   }
@@ -87,9 +87,12 @@ package object internal {
       s.chunks.evalMap(f(os, _))
 
     if (closeAfterUse)
-      Stream.bracket(fos)(useOs, os => F.delay(os.close()))
+      Stream.bracket(fos)(os => F.delay(os.close())).flatMap(useOs)
     else
       Stream.eval(fos).flatMap(useOs)
   }
 
+  private[http4s] def unsafeRunAsync[F[_], A](fa: F[A])(
+    f: Either[Throwable, A] => IO[Unit])(implicit F: Effect[F], ec: ExecutionContext): Unit =
+    F.runAsync(Async.shift(ec) *> fa)(f).unsafeRunSync
 }

@@ -19,7 +19,7 @@ import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-sealed class TomcatBuilder[F[_]: Effect] private (
+sealed class TomcatBuilder[F[_] : Effect] private (
     socketAddress: InetSocketAddress,
     private val executionContext: ExecutionContext,
     private val idleTimeout: Duration,
@@ -29,12 +29,11 @@ sealed class TomcatBuilder[F[_]: Effect] private (
     mounts: Vector[Mount[F]],
     private val serviceErrorHandler: ServiceErrorHandler[F],
     banner: immutable.Seq[String]
-) extends ServletContainer[F]
+)(implicit F: ConcurrentEffect[F]) extends ServletContainer[F]
     with ServerBuilder[F]
     with IdleTimeoutSupport[F]
     with SSLKeyStoreSupport[F] {
 
-  private val F = Effect[F]
   type Self = TomcatBuilder[F]
 
   private[this] val logger = getLogger
@@ -117,7 +116,7 @@ sealed class TomcatBuilder[F[_]: Effect] private (
         service = service,
         asyncTimeout = builder.asyncTimeout,
         servletIo = builder.servletIo,
-        executionContext = builder.executionContext,
+        ec = builder.executionContext,
         serviceErrorHandler = builder.serviceErrorHandler
       )
       val wrapper = Tomcat.addServlet(ctx, s"servlet-$index", servlet)
@@ -226,7 +225,7 @@ sealed class TomcatBuilder[F[_]: Effect] private (
 
 object TomcatBuilder {
 
-  def apply[F[_]: Effect]: TomcatBuilder[F] =
+  def apply[F[_]: ConcurrentEffect]: TomcatBuilder[F] =
     new TomcatBuilder[F](
       socketAddress = ServerBuilder.DefaultSocketAddress,
       executionContext = ExecutionContext.global,

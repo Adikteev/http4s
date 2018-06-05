@@ -6,14 +6,13 @@ import cats.implicits._
 import fs2._
 import org.http4s.Status._
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext
 
 object GetRoutes {
   val SimplePath = "/simple"
   val ChunkedPath = "/chunked"
   val DelayedPath = "/delayed"
 
-  def getPaths(implicit ec: ExecutionContext): Map[String, Response[IO]] =
+  def getPaths(implicit timer: Timer[IO]): Map[String, Response[IO]] =
     Map(
       SimplePath -> Response[IO](Ok).withBody("simple path"),
       ChunkedPath -> Response[IO](Ok).withBody(

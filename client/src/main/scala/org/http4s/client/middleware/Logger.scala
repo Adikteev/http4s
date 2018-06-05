@@ -11,13 +11,13 @@ import org.log4s.{Logger ⇒ SLogger}
   * Simple Middleware for Logging All Requests and Responses
   */
 object Logger {
-  def apply[F[_]: Effect](
+  def apply[F[_]: Concurrent](
       logHeaders: Boolean,
       logBody: Boolean,
       redactHeadersWhen: CaseInsensitiveString => Boolean = Headers.SensitiveHeaders.contains
   )(client: Client[F]): Client[F] =
-    ResponseLogger.apply0(logHeaders, logBody, redactHeadersWhen)(
-      RequestLogger.apply0(logHeaders, logBody, redactHeadersWhen)(
+    ResponseLogger.apply(logHeaders, logBody, redactHeadersWhen)(
+      RequestLogger.apply(logHeaders, logBody, redactHeadersWhen)(
         client
       )
     )
@@ -26,7 +26,7 @@ object Logger {
       logHeaders: Boolean,
       logBody: Boolean,
       redactHeadersWhen: CaseInsensitiveString => Boolean = Headers.SensitiveHeaders.contains)(
-      logger: SLogger)(implicit F: Effect[F]): F[Unit] = {
+      logger: SLogger)(implicit F: Sync[F]): F[Unit] = {
 
     val charset = message.charset
     val isBinary = message.contentType.exists(_.mediaType.binary)

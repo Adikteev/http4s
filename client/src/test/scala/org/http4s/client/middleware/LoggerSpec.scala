@@ -27,7 +27,7 @@ class LoggerSpec extends Http4sSpec {
 
   "ResponseLogger" should {
     val responseLoggerClient =
-      ResponseLogger.apply0(true, true)(Client.fromHttpService(testService))
+      ResponseLogger.apply(true, true)(Client.fromHttpService(testService))
 
     "not affect a Get" in {
       val req = Request[IO](uri = uri("/request"))
@@ -42,7 +42,7 @@ class LoggerSpec extends Http4sSpec {
   }
 
   "RequestLogger" should {
-    val requestLoggerClient = RequestLogger.apply0(true, true)(Client.fromHttpService(testService))
+    val requestLoggerClient = RequestLogger.apply(true, true)(Client.fromHttpService(testService))
 
     "not affect a Get" in {
       val req = Request[IO](uri = uri("/request"))

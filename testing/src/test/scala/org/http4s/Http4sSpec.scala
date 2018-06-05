@@ -45,7 +45,6 @@ trait Http4sSpec
     with IOMatchers
     with Http4sMatchers {
   implicit def testExecutionContext: ExecutionContext = Http4sSpec.TestExecutionContext
-  implicit def testScheduler: Scheduler = Http4sSpec.TestScheduler
 
   implicit val params = Parameters(maxSize = 20)
 
@@ -125,11 +124,4 @@ object Http4sSpec {
 
   val TestBlockingExecutionContext: ExecutionContext =
     ExecutionContext.fromExecutor(newBlockingPool("http4s-spec-blocking"))
-
-  val TestScheduler: Scheduler = {
-    val (sched, _) = Scheduler
-      .allocate[IO](corePoolSize = 4, threadPrefix = "http4s-spec-scheduler")
-      .unsafeRunSync()
-    sched
-  }
 }

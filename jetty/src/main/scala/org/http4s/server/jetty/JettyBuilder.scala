@@ -111,7 +111,7 @@ sealed class JettyBuilder[F[_]: Effect] private (
         service = service,
         asyncTimeout = builder.asyncTimeout,
         servletIo = builder.servletIo,
-        executionContext = builder.executionContext,
+        ec = builder.executionContext,
         serviceErrorHandler = builder.serviceErrorHandler
       )
       val servletName = s"servlet-$index"

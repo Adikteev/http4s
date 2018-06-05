@@ -492,6 +492,7 @@ lazy val commonSettings = Seq(
   ),
   libraryDependencies ++= Seq(
     catsLaws,
+    catsTestKit,
     catsKernelLaws,
     discipline,
     logbackClassic,
