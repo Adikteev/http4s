@@ -14,5 +14,8 @@ addSbtPlugin("io.verizon.build"    %  "sbt-rig"               % "5.0.39")
 addSbtPlugin("org.tpolecat"        %  "tut-plugin"            % "0.6.4")
 addSbtPlugin("pl.project13.scala"  %  "sbt-jmh"               % "0.3.4")
 addSbtPlugin("com.timushev.sbt"    %  "sbt-updates"           % "0.3.4")
+addSbtPlugin("no.arktekk.sbt" % "aether-deploy" % "0.20.0")
+
+libraryDependencies += "io.packagecloud.maven.wagon" % "maven-packagecloud-wagon" % "0.0.6"
 
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"

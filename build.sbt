@@ -16,6 +16,8 @@ onLoad in Global := { s =>
   "dependencyUpdates" :: s
 }
 
+import aether.AetherKeys._
+
 lazy val core = libraryProject("core")
   .enablePlugins(BuildInfoPlugin)
   .settings(
@@ -488,7 +490,9 @@ lazy val commonSettings = Seq(
     "-target",
     http4sJvmTarget.value,
     "-Xlint:deprecation",
-    "-Xlint:unchecked"
+    "-Xlint:unchecked",
+    "--release",
+    "8"
   ),
   libraryDependencies ++= Seq(
     catsLaws,
@@ -515,6 +519,11 @@ lazy val commonSettings = Seq(
       }
     }).transform(node).head
   },
+  credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
+  aetherWagons := Seq(aether.WagonWrapper("packagecloud+https", "io.packagecloud.maven.wagon.PackagecloudWagon")),
+  publishTo := {
+    Some("packagecloud+https" at "packagecloud+https://packagecloud.io/Adikteev/main")
+  },
   ivyLoggingLevel := UpdateLogging.Quiet, // This doesn't seem to work? We see this in MiMa
   git.remoteRepo := "git@github.com:http4s/http4s.git",
   includeFilter in Hugo := (
@@ -537,3 +546,4 @@ def initCommands(additionalImports: String*) =
 // Everything is driven through release steps and the http4s* variables
 // This won't actually release unless on Travis.
 addCommandAlias("ci", ";clean ;release with-defaults")
+
