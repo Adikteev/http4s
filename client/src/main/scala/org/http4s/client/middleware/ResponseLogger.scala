@@ -28,7 +28,7 @@ object ResponseLogger {
             Logger.logMessage[F, Response[F]](response)(logHeaders, logBody, redactHeadersWhen)(
               logger.info(_)) *> F.delay(dr)
           else
-            Ref[F].of(Vector.empty[Segment[Byte, Unit]]).map {
+            Ref[F].of(Vector.empty[Chunk[Byte]]).map {
               vec =>
                 val newBody = Stream
                   .eval(vec.get)

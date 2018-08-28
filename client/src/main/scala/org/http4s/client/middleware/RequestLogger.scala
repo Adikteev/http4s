@@ -27,7 +27,7 @@ object RequestLogger {
           Logger.logMessage[F, Request[F]](req)(logHeaders, logBody, redactHeadersWhen)(
             logger.info(_)) *> client.open(req)
         else
-          Ref[F].of(Vector.empty[Segment[Byte, Unit]]).flatMap { vec =>
+          Ref[F].of(Vector.empty[Chunk[Byte]]).flatMap { vec =>
             val newBody = Stream
               .eval(vec.get)
               .flatMap(v => Stream.emits(v).covary[F])

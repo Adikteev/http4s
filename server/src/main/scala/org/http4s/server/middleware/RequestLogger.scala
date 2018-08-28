@@ -30,7 +30,7 @@ object RequestLogger {
           .logMessage[F, Request[F]](req)(logHeaders, logBody)(logAction) *> httpApp(req)
       } else {
         Ref[F]
-          .of(Vector.empty[Segment[Byte, Unit]])
+          .of(Vector.empty[Chunk[Byte]])
           .flatMap { vec =>
             val newBody = Stream
               .eval(vec.get)

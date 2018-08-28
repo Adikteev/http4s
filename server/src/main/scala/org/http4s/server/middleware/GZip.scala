@@ -98,7 +98,7 @@ object GZip {
     _.pull.unconsLimit(maxReadLimit).flatMap(trailerStep(gen, maxReadLimit)).stream
 
   private def trailerStep(gen: TrailerGen, maxReadLimit: Long): (Option[
-    (Segment[Byte, Unit], Stream[Pure, Byte])]) => Pull[Pure, Byte, Option[Stream[Pure, Byte]]] = {
+    (Chunk[Byte], Stream[Pure, Byte])]) => Pull[Pure, Byte, Option[Stream[Pure, Byte]]] = {
     case None => Pull.pure(None)
     case Some((segment, stream)) =>
       //Avoid copying chunk toARray

@@ -31,7 +31,7 @@ object ResponseLogger {
             Logger.logMessage[F, Response[F]](response)(logHeaders, logBody, redactHeadersWhen)(
               logAction) *> F.delay(response)
           else
-            Ref[F].of(Vector.empty[Segment[Byte, Unit]]).map { vec =>
+            Ref[F].of(Vector.empty[Chunk[Byte]]).map { vec =>
               val newBody = Stream
                 .eval(vec.get)
                 .flatMap(v => Stream.emits(v).covary[F])

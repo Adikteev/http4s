@@ -2,6 +2,7 @@ package org.http4s.util
 
 import cats.data.NonEmptyList
 import fs2._
+import cats.syntax.semigroup._
 import java.nio.charset.{Charset, StandardCharsets}
 import java.time.{Instant, ZoneId}
 import java.time.format.DateTimeFormatter
@@ -192,12 +193,12 @@ object StringWriter {
   * @param toByteSegment initial `Segment`
   */
 final case class SegmentWriter(
-    var toByteSegment: Segment[Byte, Unit] = Segment.empty[Byte],
+    var toByteSegment: Chunk[Byte] = Chunk.empty[Byte],
     charset: Charset = StandardCharsets.UTF_8
 ) extends Writer {
 
   override def append(s: String): this.type = {
-    toByteSegment = toByteSegment ++ Segment.array(s.getBytes(charset))
+    toByteSegment = toByteSegment ++ Chunk.array(s.getBytes(charset))
     this
   }
 

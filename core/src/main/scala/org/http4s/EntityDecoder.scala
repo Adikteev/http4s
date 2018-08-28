@@ -1,14 +1,18 @@
 package org.http4s
 
 import cats._
-import cats.effect.Sync
+import cats.effect.{ContextShift, Sync}
+import cats.syntax.semigroupk._
 import cats.implicits._
 import fs2._
 import fs2.io._
 import java.io.{File, FileOutputStream, PrintStream}
+
 import org.http4s.headers.`Content-Type`
 import org.http4s.multipart.{Multipart, MultipartDecoder}
+
 import scala.annotation.implicitNotFound
+import scala.concurrent.ExecutionContext
 
 /** A type that can be used to decode a [[Message]]
   * EntityDecoder is used to attempt to decode a [[Message]] returning the
@@ -177,8 +181,8 @@ object EntityDecoder extends EntityDecoderInstances {
   }
 
   /** Helper method which simply gathers the body into a single Segment */
-  def collectBinary[F[_]: Sync](msg: Message[F]): DecodeResult[F, Segment[Byte, Unit]] =
-    DecodeResult.success(msg.body.segments.compile.foldMonoid)
+  def collectBinary[F[_]: Sync](msg: Message[F]): DecodeResult[F, Chunk[Byte]] =
+    DecodeResult.success(msg.body.chunks.compile.foldMonoid)
 
   /** Decodes a message to a String */
   def decodeString[F[_]: Sync](msg: Message[F])(
@@ -200,34 +204,38 @@ trait EntityDecoderInstances {
       override def consumes: Set[MediaRange] = Set.empty
     }
 
-  implicit def binary[F[_]: Sync]: EntityDecoder[F, Segment[Byte, Unit]] =
+  implicit def binary[F[_]: Sync]: EntityDecoder[F, Chunk[Byte]] =
     EntityDecoder.decodeBy(MediaRange.`*/*`)(collectBinary[F])
 
   implicit def binaryChunk[F[_]: Sync]: EntityDecoder[F, Chunk[Byte]] =
-    binary[F].map(_.force.toChunk)
+    binary[F]
 
   implicit def byteArrayDecoder[F[_]: Sync]: EntityDecoder[F, Array[Byte]] =
-    binary.map(_.force.toArray)
+    binary.map(_.toArray)
 
   implicit def text[F[_]: Sync](
       implicit defaultCharset: Charset = DefaultCharset): EntityDecoder[F, String] =
     EntityDecoder.decodeBy(MediaRange.`text/*`)(msg =>
       collectBinary(msg).map(bs =>
-        new String(bs.force.toArray, msg.charset.getOrElse(defaultCharset).nioCharset)))
+        new String(bs.toArray, msg.charset.getOrElse(defaultCharset).nioCharset)))
 
   implicit def charArrayDecoder[F[_]: Sync]: EntityDecoder[F, Array[Char]] =
     text.map(_.toArray)
 
   // File operations // TODO: rewrite these using NIO non blocking FileChannels, and do these make sense as a 'decoder'?
-  def binFile[F[_]](file: File)(implicit F: Sync[F]): EntityDecoder[F, File] =
+  def binFile[F[_]](file: File)(implicit F: Sync[F],
+                                executionContext : ExecutionContext,
+                                contextShift: ContextShift[F]): EntityDecoder[F, File] =
     EntityDecoder.decodeBy(MediaRange.`*/*`) { msg =>
-      val sink = writeOutputStream[F](F.delay(new FileOutputStream(file)))
+      val sink = writeOutputStream[F](F.delay(new FileOutputStream(file)), executionContext)
       DecodeResult.success(msg.body.to(sink).compile.drain).map(_ => file)
     }
 
-  def textFile[F[_]](file: File)(implicit F: Sync[F]): EntityDecoder[F, File] =
+  def textFile[F[_]](file: File)(implicit F: Sync[F],
+                                 executionContext : ExecutionContext,
+                                 contextShift: ContextShift[F]): EntityDecoder[F, File] =
     EntityDecoder.decodeBy(MediaRange.`text/*`) { msg =>
-      val sink = writeOutputStream[F](F.delay(new PrintStream(new FileOutputStream(file))))
+      val sink = writeOutputStream[F](F.delay(new PrintStream(new FileOutputStream(file))), executionContext)
       DecodeResult.success(msg.body.to(sink).compile.drain).map(_ => file)
     }
 

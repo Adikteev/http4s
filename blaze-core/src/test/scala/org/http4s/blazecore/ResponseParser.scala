@@ -38,7 +38,7 @@ class ResponseParser extends Http1ClientParser {
 
     val bp = {
       val bytes =
-        body.toList.foldMap[Segment[Byte, Unit]](bb => Segment.chunk(Chunk.byteBuffer(bb)))
+        body.toList.foldMap[Chunk[Byte]](bb => Segment.chunk(Chunk.byteBuffer(bb)))
       new String(bytes.force.toArray, StandardCharsets.ISO_8859_1)
     }
 

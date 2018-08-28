@@ -278,7 +278,7 @@ it.
 * Relax various typeclass constraints from `Effect` to `Sync` or `Async`. [#1587](https://github.com/http4s/http4s/pull/1587)
 * Operate on `Segment` instead of `Chunk` [#1588](https://github.com/http4s/http4s/pull/1588)
    * `EntityDecoder.collectBinary` and `EntityDecoder.binary` now
-     return `Segment[Byte, Unit]` instead of `Chunk[Byte]`.
+     return `Chunk[Byte]` instead of `Chunk[Byte]`.
    * Add `EntityDecoder.binaryChunk`.
    * Add `EntityEncoder.segmentEncoder`.
    * `http4sMonoidForChunk` replaced by `http4sMonoidForSegment`.

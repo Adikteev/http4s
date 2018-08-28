@@ -64,7 +64,7 @@ trait Http4sSpec
         }
     }
 
-  implicit def arbitrarySegment: Arbitrary[Segment[Byte, Unit]] =
+  implicit def arbitrarySegment: Arbitrary[Chunk[Byte]] =
     Arbitrary(arbitraryByteChunk.arbitrary.map(Segment.chunk))
 
   def writeToString[A](a: A)(implicit W: EntityEncoder[IO, A]): String =

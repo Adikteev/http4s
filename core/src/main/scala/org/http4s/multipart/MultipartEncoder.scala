@@ -25,13 +25,13 @@ private[http4s] class MultipartEncoder[F[_]] extends EntityEncoder[F, Multipart[
   val closeDelimiter: Boundary => String =
     boundary => s"${delimiter(boundary)}$dash"
 
-  val start: Boundary => Segment[Byte, Unit] = boundary =>
+  val start: Boundary => Chunk[Byte] = boundary =>
     SegmentWriter()
       .append(dashBoundary(boundary))
       .append(Boundary.CRLF)
       .toByteSegment
 
-  val end: Boundary => Segment[Byte, Unit] = boundary =>
+  val end: Boundary => Chunk[Byte] = boundary =>
     SegmentWriter()
       .append(closeDelimiter(boundary))
       .toByteSegment
@@ -42,7 +42,7 @@ private[http4s] class MultipartEncoder[F[_]] extends EntityEncoder[F, Multipart[
   val encapsulationWithoutBody: Boundary => String = boundary =>
     s"${Boundary.CRLF}${dashBoundary(boundary)}${Boundary.CRLF}"
 
-  val renderHeaders: Headers => Segment[Byte, Unit] = headers =>
+  val renderHeaders: Headers => Chunk[Byte] = headers =>
     headers
       .foldLeft(SegmentWriter()) { (chunkWriter, header) =>
         chunkWriter
@@ -51,7 +51,7 @@ private[http4s] class MultipartEncoder[F[_]] extends EntityEncoder[F, Multipart[
       }
       .toByteSegment
 
-  def renderPart(prelude: Segment[Byte, Unit])(part: Part[F]): Stream[F, Byte] =
+  def renderPart(prelude: Chunk[Byte])(part: Part[F]): Stream[F, Byte] =
     Stream.segment(prelude) ++
       Stream.segment(renderHeaders(part.headers)) ++
       Stream.chunk(Chunk.bytes(Boundary.CRLF.getBytes(StandardCharsets.UTF_8))) ++
