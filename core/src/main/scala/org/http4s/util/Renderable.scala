@@ -2,7 +2,6 @@ package org.http4s.util
 
 import cats.data.NonEmptyList
 import fs2._
-import cats.syntax.semigroup._
 import java.nio.charset.{Charset, StandardCharsets}
 import java.time.{Instant, ZoneId}
 import java.time.format.DateTimeFormatter

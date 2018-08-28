@@ -11,8 +11,8 @@ package object util {
   def decode[F[_]](charset: Charset): Pipe[F, Byte, String] = {
     val decoder = charset.nioCharset.newDecoder
     val maxCharsPerByte = math.ceil(decoder.maxCharsPerByte().toDouble).toInt
-    val avgBytesPerChar = math.ceil(1.0 / decoder.averageCharsPerByte().toDouble).toLong
-    val charBufferSize = 128L
+    val avgBytesPerChar = math.ceil(1.0 / decoder.averageCharsPerByte().toDouble).toInt
+    val charBufferSize = 128
 
     _.repeatPull[String] {
       _.unconsN(charBufferSize * avgBytesPerChar, allowFewer = true).flatMap {
@@ -23,8 +23,8 @@ package object util {
           val outputString = charBuffer.flip().toString
           if (outputString.isEmpty) Pull.done.as(None)
           else Pull.output1(outputString).as(None)
-        case Some((segment, stream)) =>
-          val bytes = segment.force.toArray
+        case Some((chunks, stream)) =>
+          val bytes = chunks.toArray
           val byteBuffer = ByteBuffer.wrap(bytes)
           val charBuffer = CharBuffer.allocate(bytes.length * maxCharsPerByte)
           decoder.decode(byteBuffer, charBuffer, false)
@@ -98,14 +98,6 @@ package object util {
     "Moved to org.http4s.execution.trampoline, is now merely a ExecutionContextExecutor.",
     "0.18.0-M2")
   val TrampolineExecutionContext: ExecutionContextExecutor = execution.trampoline
-
-  @deprecated("Use fs2.StreamApp instead", "0.18.0-M7")
-  type StreamApp[F[_]] = fs2.StreamApp[F]
-
-  @deprecated("Use fs2.StreamApp.ExitCode instead", "0.18.0-M7")
-  type ExitCode = fs2.StreamApp.ExitCode
-  @deprecated("Use fs2.StreamApp.ExitCode instead", "0.18.0-M7")
-  val ExitCode = fs2.StreamApp.ExitCode
 
   /* This is nearly identical to the hashCode of java.lang.String, but converting
    * to lower case on the fly to avoid copying `value`'s character storage.
